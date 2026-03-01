@@ -151,6 +151,12 @@ code {
   outline-offset: 1px;
 }
 
+.health-check-status {
+  margin: 0.85rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 .grid {
   margin-top: 1.25rem;
   display: grid;
@@ -237,6 +243,63 @@ code {
 .empty {
   margin: 1.1rem 0 0;
   color: var(--muted);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(5, 10, 17, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.modal {
+  width: min(30rem, 100%);
+  background: #111a2a;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+  padding: 1.1rem 1.1rem 1rem;
+  animation: fade-up 180ms ease-out;
+}
+
+.modal h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.modal p {
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+}
+
+.modal-list {
+  margin: 0.7rem 0 0;
+  padding: 0 0 0 1.05rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.modal-list a {
+  color: var(--ink);
+}
+
+.modal-close {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: #18263f;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background: #213150;
 }
 
 @keyframes fade-up {

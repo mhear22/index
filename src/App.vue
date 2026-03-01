@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { projects } from "./data/projects";
+import { computed, onMounted, ref } from "vue";
+import { projects, type HostedProject } from "./data/projects";
 
 const query = ref("");
+const isChecking = ref(false);
+const failedProjects = ref<HostedProject[]>([]);
+const showFailureModal = ref(false);
 
 const filteredProjects = computed(() => {
   const value = query.value.trim().toLowerCase();
@@ -26,6 +29,48 @@ const filteredProjects = computed(() => {
 const liveCount = computed(
   () => projects.filter((project) => project.status === "Live").length
 );
+
+async function pingSite(url: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+
+  try {
+    await fetch(url, {
+      method: "GET",
+      mode: "no-cors",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+async function runHealthChecks() {
+  isChecking.value = true;
+  failedProjects.value = [];
+
+  for (const project of projects.filter((item) => item.status === "Live")) {
+    const isAlive = await pingSite(project.url);
+    if (!isAlive) {
+      failedProjects.value.push(project);
+    }
+  }
+
+  isChecking.value = false;
+  showFailureModal.value = failedProjects.value.length > 0;
+}
+
+function closeFailureModal() {
+  showFailureModal.value = false;
+}
+
+onMounted(() => {
+  void runHealthChecks();
+});
 </script>
 
 <template>
@@ -62,6 +107,16 @@ const liveCount = computed(
             aria-label="Search projects"
           />
         </label>
+
+        <p class="health-check-status" aria-live="polite">
+          <span v-if="isChecking">Checking live site health...</span>
+          <span v-else-if="failedProjects.length === 0">
+            All live sites responded during startup checks.
+          </span>
+          <span v-else>
+            {{ failedProjects.length }} site(s) failed startup health checks.
+          </span>
+        </p>
       </header>
 
       <section class="grid" aria-live="polite">
@@ -87,5 +142,32 @@ const liveCount = computed(
         No matches. Try a different search term.
       </p>
     </main>
+
+    <div
+      v-if="showFailureModal"
+      class="modal-backdrop"
+      role="presentation"
+      @click.self="closeFailureModal"
+    >
+      <section
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="health-check-failure-title"
+      >
+        <h2 id="health-check-failure-title">Site check failed</h2>
+        <p>The following sites did not respond during startup checks:</p>
+        <ul class="modal-list">
+          <li v-for="project in failedProjects" :key="`failed-${project.url}`">
+            <a :href="project.url" target="_blank" rel="noreferrer">
+              {{ project.name }}
+            </a>
+          </li>
+        </ul>
+        <button class="modal-close" type="button" @click="closeFailureModal">
+          Close
+        </button>
+      </section>
+    </div>
   </div>
 </template>
