@@ -2,6 +2,58 @@
 import { computed, onMounted, ref } from "vue";
 import { projects, type HostedProject } from "./data/projects";
 
+interface StackTech {
+  key: string;
+  label: string;
+  iconSrc?: string;
+}
+
+interface TechIconConfig {
+  label: string;
+  iconSlug: string;
+}
+
+const iconBaseUrl = "https://cdn.simpleicons.org";
+
+const techIconMap: Record<string, TechIconConfig> = {
+  vue: { label: "Vue", iconSlug: "vuedotjs" },
+  vuejs: { label: "Vue", iconSlug: "vuedotjs" },
+  next: { label: "Next.js", iconSlug: "nextdotjs" },
+  nextjs: { label: "Next.js", iconSlug: "nextdotjs" },
+  vercel: { label: "Vercel", iconSlug: "vercel" },
+  typescript: { label: "TypeScript", iconSlug: "typescript" },
+  ts: { label: "TypeScript", iconSlug: "typescript" },
+  docker: { label: "Docker", iconSlug: "docker" },
+};
+
+function normalizeTech(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function parseStack(stack: string): StackTech[] {
+  return stack
+    .split("+")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part, index) => {
+      const normalized = normalizeTech(part);
+      const icon = techIconMap[normalized];
+
+      if (!icon) {
+        return {
+          key: `${normalized || "unknown"}-${index}`,
+          label: part,
+        };
+      }
+
+      return {
+        key: `${normalized}-${index}`,
+        label: icon.label,
+        iconSrc: `${iconBaseUrl}/${icon.iconSlug}`,
+      };
+    });
+}
+
 const query = ref("");
 const isChecking = ref(false);
 const failedProjects = ref<HostedProject[]>([]);
@@ -126,7 +178,23 @@ onMounted(() => {
             <span class="status">{{ project.status }}</span>
           </div>
           <p class="description">{{ project.description }}</p>
-          <p class="stack">{{ project.stack }}</p>
+          <ul class="stack-list" aria-label="Tech stack">
+            <li
+              v-for="tech in parseStack(project.stack)"
+              :key="`${project.url}-${tech.key}`"
+              class="stack-item"
+            >
+              <img
+                v-if="tech.iconSrc"
+                class="stack-icon"
+                :src="tech.iconSrc"
+                :alt="`${tech.label} logo`"
+                loading="lazy"
+                decoding="async"
+              />
+              <span class="stack-label">{{ tech.label }}</span>
+            </li>
+          </ul>
           <ul class="tags">
             <li v-for="tag in project.tags" :key="`${project.name}-${tag}`">
               #{{ tag }}
